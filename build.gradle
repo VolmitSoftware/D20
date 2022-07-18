@@ -96,7 +96,6 @@ shadowJar {
     minimize()
     append("plugin.yml")
     relocate 'manifold', 'com.volmit.d20.util.manifold'
-    relocate 'art.arcane', 'com.volmit.d20.util.arcane'
     relocate 'io.papermc.lib', 'com.volmit.d20.util.paper'
     relocate 'net.kyori', 'com.volmit.d20.util.kyori'
     relocate 'ChumBukkit.extensions', 'com.volmit.d20.util.extensions'

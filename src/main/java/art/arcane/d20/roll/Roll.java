@@ -1,51 +1,126 @@
 package art.arcane.d20.roll;
 
-public interface Roll {
-    int roll();
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Singular;
 
-    int getRollCount();
+import java.util.ArrayList;
+import java.util.List;
 
-    int getModifier();
+@Builder
+@AllArgsConstructor
+@Data
+public class Roll implements Rollable {
+    @Singular
+    private final List<Rollable> rolls;
 
-    String encode();
-
-    default Roll decode(String s)
-    {
-        return null;
+    public Roll() {
+        this.rolls = new ArrayList<>();
     }
 
-    default RollChain.RollChainBuilder and(Roll r)
-    {
-        return RollChain.builder().roll(this).roll(r);
+    public static Roll decode(String roll) {
+        roll = roll.replaceAll("\\Q \\E", "");
+        List<Rollable> rolls = new ArrayList<>();
+
+        if(roll.contains("+")) {
+            String[] comp = roll.replaceAll("\\Q \\E", "").split("\\Q+\\E");
+            String buf = "";
+
+            for(String i : comp)
+            {
+                if(i.contains("d")) {
+                    if(buf.isNotEmpty()) {
+                        rolls.add(BasicRoll.decode(buf));
+                        buf = "";
+                    }
+
+                    buf += i;
+                }
+
+                else if(buf.isNotEmpty()) {
+                    buf += "+" + i;
+                }
+            }
+
+            if(buf.isNotEmpty()) {
+                rolls.add(BasicRoll.decode(buf));
+            }
+        }
+
+        else {
+            rolls.add(BasicRoll.decode(roll));
+        }
+
+        return new Roll(rolls);
     }
 
-    default RollChain.RollChainBuilder and(SimpleRoll.SimpleRollBuilder r)
-    {
-        return RollChain.builder().roll(this).roll(r.build());
+    public Roll roll(BasicRoll.BasicRollBuilder b) {
+        rolls.add(b.build());
+        return this;
     }
 
-    static SimpleRoll.SimpleRollBuilder d20()
-    {
-        return SimpleRoll.builder().die(() -> 20);
+    public static BasicRoll.BasicRollBuilder d(int f){
+        return BasicRoll.builder().sides(f);
     }
 
-    static SimpleRoll.SimpleRollBuilder d10()
-    {
-        return SimpleRoll.builder().die(() -> 10);
+    public static BasicRoll.BasicRollBuilder d20(){
+        return d(20);
     }
 
-    static SimpleRoll.SimpleRollBuilder d4()
-    {
-        return SimpleRoll.builder().die(() -> 4);
+    public static BasicRoll.BasicRollBuilder d10(){
+        return d(10);
     }
 
-    static SimpleRoll.SimpleRollBuilder d6()
-    {
-        return SimpleRoll.builder().die(() -> 6);
+    public static BasicRoll.BasicRollBuilder d8(){
+        return d(8);
     }
 
-    static SimpleRoll.SimpleRollBuilder d100()
-    {
-        return SimpleRoll.builder().die(() -> 100);
+    public static BasicRoll.BasicRollBuilder d2(){
+        return d(2);
+    }
+
+    public static BasicRoll.BasicRollBuilder d4(){
+        return d(4);
+    }
+
+    public static BasicRoll.BasicRollBuilder d6(){
+        return d(6);
+    }
+
+    public static BasicRoll.BasicRollBuilder d100(){
+        return d(100);
+    }
+
+    public RollResult roll() {
+        RollResult buf = new RollResult(List.of(), 0);
+
+        for(Rollable i : rolls) {
+            buf = buf.add(i.roll());
+        }
+
+        return buf;
+    }
+
+    @Override
+    public String encode() {
+        StringBuilder sb = new StringBuilder();
+
+        for(Rollable i : rolls) {
+            sb.append(" + ").append(i.encode());
+        }
+
+        return sb.substring(3);
+    }
+
+    @Override
+    public int getMaxResult() {
+        int m = 0;
+
+        for(Rollable i : rolls) {
+            m+= i.getMaxResult();
+        }
+
+        return m;
     }
 }
